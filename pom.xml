@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>fr.dopolytech.polyshop</groupId>
 	<artifactId>inventory</artifactId>
-	<version>0.0.2</version>
+	<version>0.0.3</version>
 	<name>inventory</name>
 	<description>Inventory project for PolyShop</description>
 	<properties>
@@ -35,6 +35,10 @@
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-netflix-eureka-client -->
 		<dependency>

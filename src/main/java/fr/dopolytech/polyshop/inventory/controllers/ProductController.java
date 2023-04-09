@@ -12,43 +12,43 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.dopolytech.polyshop.inventory.documents.Product;
-import fr.dopolytech.polyshop.inventory.repositories.ProductRepository;
+import fr.dopolytech.polyshop.inventory.services.ProductService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/products")
 public class ProductController {
-    private final ProductRepository productRepository;
+    private final ProductService productService;
 
-    public ProductController(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public ProductController(ProductService productService) {
+        this.productService = productService;
     }
 
     @PostMapping
     @ResponseStatus(code = HttpStatus.CREATED)
     public Mono<Product> createProduct(@RequestBody Product product) {
-        return productRepository.save(product);
+        return productService.saveProduct(product);
     }
 
     @GetMapping
     public Flux<Product> getProduct() {
-        return productRepository.findAll();
+        return productService.getProducts();
     }
 
     @GetMapping("/{id}")
     public Mono<Product> getProductById(@PathVariable String id) {
-        return productRepository.findById(id);
+        return productService.getProductById(id);
     }
 
     @PutMapping("/{id}")
     public Mono<Product> updateProductById(@PathVariable String id, @RequestBody Product product) {
         product.setId(id);
-        return productRepository.save(product);
+        return productService.saveProduct(product);
     }
 
     @DeleteMapping("/{id}")
     public Mono<Void> deleteProductById(@PathVariable String id) {
-        return productRepository.deleteById(id);
+        return productService.deleteById(id);
     }
 }
