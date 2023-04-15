@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import fr.dopolytech.polyshop.inventory.documents.Product;
+import fr.dopolytech.polyshop.inventory.dtos.CreateProductDto;
+import fr.dopolytech.polyshop.inventory.dtos.UpdateProductDto;
+import fr.dopolytech.polyshop.inventory.models.Product;
 import fr.dopolytech.polyshop.inventory.services.ProductService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -27,8 +29,8 @@ public class ProductController {
 
     @PostMapping
     @ResponseStatus(code = HttpStatus.CREATED)
-    public Mono<Product> createProduct(@RequestBody Product product) {
-        return productService.saveProduct(product);
+    public Mono<Product> createProduct(@RequestBody CreateProductDto product) {
+        return productService.createProduct(product);
     }
 
     @GetMapping
@@ -38,17 +40,16 @@ public class ProductController {
 
     @GetMapping("/{id}")
     public Mono<Product> getProductById(@PathVariable String id) {
-        return productService.getProductById(id);
+        return productService.getProduct(id);
     }
 
     @PutMapping("/{id}")
-    public Mono<Product> updateProductById(@PathVariable String id, @RequestBody Product product) {
-        product.setId(id);
-        return productService.saveProduct(product);
+    public Mono<Product> updateProductById(@PathVariable String productId, @RequestBody UpdateProductDto dto) {
+        return productService.updateProduct(productId, dto);
     }
 
     @DeleteMapping("/{id}")
     public Mono<Void> deleteProductById(@PathVariable String id) {
-        return productService.deleteById(id);
+        return productService.deleteProduct(id);
     }
 }
