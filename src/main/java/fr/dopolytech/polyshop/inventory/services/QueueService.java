@@ -1,4 +1,4 @@
-package fr.dopolytech.polyshop.inventory.components;
+package fr.dopolytech.polyshop.inventory.services;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -9,11 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.dopolytech.polyshop.inventory.events.InventoryUpdatedEvent;
 
 @Component
-public class QueueUtils {
+public class QueueService {
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public QueueUtils(RabbitTemplate rabbitTemplate) {
+    public QueueService(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
     }
 

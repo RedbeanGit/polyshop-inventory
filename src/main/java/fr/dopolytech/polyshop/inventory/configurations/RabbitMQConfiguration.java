@@ -10,17 +10,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfiguration {
     @Bean
-    public Queue orderQueue() {
-        return new Queue("inventoryOrderQueue", true);
+    public Queue orderCreatedQueue() {
+        return new Queue("orderCreatedQueue", true);
     }
 
     @Bean
-    public TopicExchange cartExchange() {
+    public TopicExchange orderExchange() {
         return new TopicExchange("orderExchange");
     }
 
     @Bean
-    public Binding orderBinding(Queue inventoryQueue, TopicExchange cartExchange) {
-        return BindingBuilder.bind(inventoryQueue).to(cartExchange).with("order.process");
+    public Binding orderBinding(Queue queue, TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with("order.created");
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import fr.dopolytech.polyshop.inventory.components.QueueUtils;
 import fr.dopolytech.polyshop.inventory.dtos.CreateProductDto;
 import fr.dopolytech.polyshop.inventory.dtos.UpdateProductDto;
 import fr.dopolytech.polyshop.inventory.events.InventoryUpdatedEvent;
@@ -23,11 +22,11 @@ import reactor.core.publisher.Mono;
 @Service
 public class ProductService {
     private final ProductRepository productRepository;
-    private final QueueUtils queueUtils;
+    private final QueueService queueService;
 
-    public ProductService(ProductRepository productRepository, QueueUtils queueUtils) {
+    public ProductService(ProductRepository productRepository, QueueService queueService) {
         this.productRepository = productRepository;
-        this.queueUtils = queueUtils;
+        this.queueService = queueService;
     }
 
     public Mono<Product> getProduct(String productId) {
@@ -57,7 +56,7 @@ public class ProductService {
     @RabbitListener(queues = "orderCreatedQueue")
     public void onOrderCreated(String message) {
         try {
-            OrderCreatedEvent orderCreatedEvent = queueUtils.parse(message, OrderCreatedEvent.class);
+            OrderCreatedEvent orderCreatedEvent = queueService.parse(message, OrderCreatedEvent.class);
             List<InventoryUpdatedEventProduct> updatedProducts = new ArrayList<>();
 
             for (OrderCreatedEventProduct product : orderCreatedEvent.products) {
@@ -77,7 +76,7 @@ public class ProductService {
 
             InventoryUpdatedEvent inventoryUpdateEvent = new InventoryUpdatedEvent(orderCreatedEvent.orderId,
                     updatedProducts.toArray(new InventoryUpdatedEventProduct[updatedProducts.size()]));
-            queueUtils.sendUpdate(inventoryUpdateEvent);
+            queueService.sendUpdate(inventoryUpdateEvent);
 
         } catch (JsonProcessingException e) {
             e.printStackTrace();
