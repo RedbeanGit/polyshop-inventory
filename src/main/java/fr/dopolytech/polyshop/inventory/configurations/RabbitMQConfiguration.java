@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfiguration {
     @Bean
-    public Queue orderCreatedQueue() {
-        return new Queue("orderCreatedQueue", true);
+    public Queue inventoryQueue() {
+        return new Queue("inventoryQueue", true);
     }
 
     @Bean
@@ -20,7 +20,7 @@ public class RabbitMQConfiguration {
     }
 
     @Bean
-    public Binding orderBinding(Queue queue, TopicExchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with("order.created");
+    public Binding orderBinding(Queue inventoryQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(inventoryQueue).to(exchange).with("order.created");
     }
 }

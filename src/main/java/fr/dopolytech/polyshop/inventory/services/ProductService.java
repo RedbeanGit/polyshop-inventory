@@ -53,7 +53,7 @@ public class ProductService {
         return productRepository.deleteByProductId(productId);
     }
 
-    @RabbitListener(queues = "orderCreatedQueue")
+    @RabbitListener(queues = "inventoryQueue")
     public void onOrderCreated(String message) {
         try {
             OrderCreatedEvent orderCreatedEvent = queueService.parse(message, OrderCreatedEvent.class);
