@@ -64,11 +64,12 @@ public class ProductService {
                         .flatMap(p -> {
                             if (p.quantity - product.quantity < 0) {
                                 updatedProducts.add(
-                                        new InventoryUpdatedEventProduct(p.productId, p.quantity, p.quantity, false));
+                                        new InventoryUpdatedEventProduct(p.productId, p.quantity, p.quantity,
+                                                product.quantity, false));
                             } else {
                                 updatedProducts.add(
                                         new InventoryUpdatedEventProduct(p.productId, p.quantity,
-                                                p.quantity - product.quantity, true));
+                                                p.quantity - product.quantity, product.quantity, true));
                             }
                             return productRepository.save(p);
                         });

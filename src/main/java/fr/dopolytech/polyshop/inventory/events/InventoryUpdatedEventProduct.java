@@ -2,14 +2,16 @@ package fr.dopolytech.polyshop.inventory.events;
 
 public class InventoryUpdatedEventProduct {
     public String productId;
-    public int oldQuantity;
-    public int newQuantity;
-    public boolean isSuccessful;
+    public Integer oldQuantity;
+    public Integer newQuantity;
+    public Integer changeRequested;
+    public Boolean success;
 
-    public InventoryUpdatedEventProduct(String productId, int oldQuantity, int newQuantity, boolean isSuccessful) {
+    public InventoryUpdatedEventProduct(String productId, int oldQuantity, int newQuantity, int changeRequested,
+            boolean success) {
         this.productId = productId;
         this.oldQuantity = oldQuantity;
         this.newQuantity = newQuantity;
-        this.isSuccessful = isSuccessful;
+        this.success = success;
     }
 }
