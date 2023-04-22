@@ -12,6 +12,7 @@ public class InventoryUpdatedEventProduct {
         this.productId = productId;
         this.oldQuantity = oldQuantity;
         this.newQuantity = newQuantity;
+        this.changeRequested = changeRequested;
         this.success = success;
     }
 }

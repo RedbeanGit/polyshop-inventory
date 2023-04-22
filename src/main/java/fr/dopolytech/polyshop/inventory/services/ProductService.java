@@ -57,28 +57,27 @@ public class ProductService {
     public void onOrderCreated(String message) {
         try {
             OrderCreatedEvent orderCreatedEvent = queueService.parse(message, OrderCreatedEvent.class);
-            List<InventoryUpdatedEventProduct> updatedProducts = new ArrayList<>();
+            List<Mono<InventoryUpdatedEventProduct>> productsMono = new ArrayList<>();
 
             for (OrderCreatedEventProduct product : orderCreatedEvent.products) {
-                productRepository.findByProductId(product.productId)
-                        .flatMap(p -> {
+                productsMono.add(productRepository.findByProductId(product.productId)
+                        .map(p -> {
                             if (p.quantity - product.quantity < 0) {
-                                updatedProducts.add(
-                                        new InventoryUpdatedEventProduct(p.productId, p.quantity, p.quantity,
-                                                product.quantity, false));
+                                return new InventoryUpdatedEventProduct(p.productId, p.quantity, p.quantity,
+                                        product.quantity, false);
                             } else {
-                                updatedProducts.add(
-                                        new InventoryUpdatedEventProduct(p.productId, p.quantity,
-                                                p.quantity - product.quantity, product.quantity, true));
+                                this.productRepository.save(new Product(p.productId, p.quantity - product.quantity));
+                                return new InventoryUpdatedEventProduct(p.productId, p.quantity,
+                                        p.quantity - product.quantity, product.quantity, true);
                             }
-                            return productRepository.save(p);
-                        });
+                        }));
             }
 
+            List<InventoryUpdatedEventProduct> updatedProducts = Flux.merge(productsMono).collectList().block();
             InventoryUpdatedEvent inventoryUpdateEvent = new InventoryUpdatedEvent(orderCreatedEvent.orderId,
                     updatedProducts.toArray(new InventoryUpdatedEventProduct[updatedProducts.size()]));
-            queueService.sendUpdate(inventoryUpdateEvent);
 
+            queueService.sendUpdate(inventoryUpdateEvent);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
