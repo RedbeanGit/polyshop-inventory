@@ -1,17 +1,99 @@
 version: '3'
 
 services:
-  mongo:
-    image: mongo:6.0.4
-    container_name: mongo
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
+  eureka:
+    image: redbeandock/polyshop-discovery-server:latest
     ports:
-      - 27017:27017
-
+      - 8761:8761
+  
   rabbitmq:
     image: rabbitmq:management
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - 5672:5672
+      - 15672:15672
+
+  postgres:
+    image: postgres:15.2
+    environment:
+      - POSTGRES_PASSWORD=order
+      - POSTGRES_USER=order
+      - POSTGRES_DB=order
+  
+  mongo_catalog:
+    image: mongo:6.0.5
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=catalog
+      - MONGO_INITDB_ROOT_PASSWORD=catalog
+      - MONGO_INITDB_DATABASE=admin
+
+  redis:
+    image: redis:7.0.9
+
+  mongo_inventory:
+    image: mongo:6.0.5
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=inventory
+      - MONGO_INITDB_ROOT_PASSWORD=inventory
+      - MONGO_INITDB_DATABASE=admin
+    ports:
+      - 27017:27017
+
+  catalog:
+    image: redbeandock/polyshop-catalog:latest
+    environment:
+      - MONGODB_HOST=mongo_catalog
+      - MONGODB_PORT=27017
+      - MONGODB_DATABASE=admin
+      - MONGODB_USERNAME=catalog
+      - MONGODB_PASSWORD=catalog
+      - EUREKA_HOST=eureka
+      - EUREKA_PORT=8761
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    depends_on:
+      - mongo_catalog
+      - eureka
+      - rabbitmq
+    ports:
+      - 8081:8080
+  
+  cart:
+    image: redbeandock/polyshop-cart:latest
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - EUREKA_HOST=eureka
+      - EUREKA_PORT=8761
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    depends_on:
+      - redis
+      - eureka
+      - rabbitmq
+    ports:
+      - 8082:8080
+
+  order:
+    image: redbeandock/polyshop-order:latest
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=order
+      - POSTGRES_USER=order
+      - POSTGRES_PASSWORD=order
+      - EUREKA_HOST=eureka
+      - EUREKA_PORT=8761
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    depends_on:
+      - postgres
+      - eureka
+      - rabbitmq
+    ports:
+      - 8083:8080
