@@ -61,14 +61,16 @@ public class ProductService {
 
             for (OrderCreatedEventProduct product : orderCreatedEvent.products) {
                 productsMono.add(productRepository.findByProductId(product.productId)
-                        .map(p -> {
+                        .flatMap(p -> {
                             if (p.quantity - product.quantity < 0) {
-                                return new InventoryUpdatedEventProduct(p.productId, p.quantity, p.quantity,
-                                        product.quantity, false);
+                                return Mono.just(new InventoryUpdatedEventProduct(p.productId, p.quantity, p.quantity,
+                                        product.quantity, false));
                             } else {
-                                this.productRepository.save(new Product(p.productId, p.quantity - product.quantity));
-                                return new InventoryUpdatedEventProduct(p.productId, p.quantity,
-                                        p.quantity - product.quantity, product.quantity, true);
+                                p.quantity -= product.quantity;
+                                return this.productRepository
+                                        .save(p)
+                                        .then(Mono.just(new InventoryUpdatedEventProduct(p.productId,
+                                                p.quantity + product.quantity, p.quantity, product.quantity, true)));
                             }
                         }));
             }
