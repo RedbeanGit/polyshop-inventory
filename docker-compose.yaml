@@ -97,3 +97,18 @@ services:
       - rabbitmq
     ports:
       - 8083:8080
+
+  shipping:
+    image: redbeandock/polyshop-shipping:latest
+    environment:
+      - EUREKA_HOST=eureka
+      - EUREKA_PORT=8761
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    depends_on:
+      - eureka
+      - rabbitmq
+    ports:
+      - 8085:8080

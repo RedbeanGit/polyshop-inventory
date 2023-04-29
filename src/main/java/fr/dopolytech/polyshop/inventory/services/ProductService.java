@@ -1,6 +1,5 @@
 package fr.dopolytech.polyshop.inventory.services;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,10 +11,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import fr.dopolytech.polyshop.inventory.dtos.CreateProductDto;
 import fr.dopolytech.polyshop.inventory.dtos.UpdateProductDto;
-import fr.dopolytech.polyshop.inventory.events.InventoryUpdatedEvent;
-import fr.dopolytech.polyshop.inventory.events.InventoryUpdatedEventProduct;
-import fr.dopolytech.polyshop.inventory.events.OrderEvent;
-import fr.dopolytech.polyshop.inventory.events.OrderEventProduct;
+import fr.dopolytech.polyshop.inventory.models.PolyshopEvent;
+import fr.dopolytech.polyshop.inventory.models.PolyshopEventProduct;
 import fr.dopolytech.polyshop.inventory.models.Product;
 import fr.dopolytech.polyshop.inventory.repositories.ProductRepository;
 import reactor.core.publisher.Flux;
@@ -59,39 +56,36 @@ public class ProductService {
     @Transactional
     public void onOrderCreated(String message) {
         try {
-            OrderEvent orderCreatedEvent = queueService.parse(message, OrderEvent.class);
-            List<Mono<InventoryUpdatedEventProduct>> productsMono = new ArrayList<Mono<InventoryUpdatedEventProduct>>();
-
-            for (OrderEventProduct product : orderCreatedEvent.products) {
-                productsMono.add(this.productRepository.findByProductId(product.productId)
-                        .map(p -> {
-                            if (p.quantity - product.quantity < 0) {
-                                return new InventoryUpdatedEventProduct(p.productId, p.quantity, p.quantity,
-                                        product.quantity, false);
+            PolyshopEvent event = this.queueService.parse(message);
+            List<PolyshopEventProduct> eventProducts = Arrays.asList(event.products);
+            Flux.merge(eventProducts.stream()
+                    .map(eventProduct -> this.productRepository.findByProductId(eventProduct.id)
+                            .map(product -> product.quantity - eventProduct.quantity >= 0))
+                    .toList()).collectList().flatMap(results -> {
+                        if (results.stream().allMatch(result -> result)) {
+                            return Flux.merge(eventProducts.stream()
+                                    .map(eventProduct -> this.productRepository.findByProductId(eventProduct.id)
+                                            .flatMap(product -> {
+                                                product.quantity -= eventProduct.quantity;
+                                                return this.productRepository.save(product);
+                                            }))
+                                    .toList()).collectList().then(Mono.just(true));
+                        } else {
+                            return Mono.just(false);
+                        }
+                    })
+                    .map(result -> {
+                        try {
+                            if (result) {
+                                this.queueService.sendUpdateSuccess(event);
                             } else {
-                                return new InventoryUpdatedEventProduct(p.productId, p.quantity,
-                                        p.quantity - product.quantity, product.quantity, true);
+                                this.queueService.sendUpdateFailed(event);
                             }
-                        }));
-            }
-
-            List<InventoryUpdatedEventProduct> updatedProducts = Flux.merge(productsMono).collectList().block();
-
-            if (updatedProducts.stream().map(updatedProduct -> updatedProduct.success).allMatch(success -> success)) {
-                Flux.merge(updatedProducts.stream()
-                        .map(updatedProduct -> {
-                            return this.productRepository.findByProductId(updatedProduct.productId)
-                                    .flatMap(product -> {
-                                        product.quantity = updatedProduct.newQuantity;
-                                        return this.productRepository.save(product);
-                                    });
-                        }).toList()).collectList().block();
-            }
-
-            InventoryUpdatedEvent inventoryUpdateEvent = new InventoryUpdatedEvent(orderCreatedEvent.orderId,
-                    updatedProducts.toArray(new InventoryUpdatedEventProduct[updatedProducts.size()]));
-
-            queueService.sendUpdate(inventoryUpdateEvent);
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                        }
+                        return Mono.empty();
+                    }).block();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -99,18 +93,17 @@ public class ProductService {
 
     @RabbitListener(queues = "rollbackInventoryQueue")
     @Transactional
-    public void onOrderCancelled(String message) {
+    public void onRollback(String message) {
         try {
-            OrderEvent orderEvent = queueService.parse(message, OrderEvent.class);
-            Flux.merge(Arrays.asList(orderEvent.products)
-                    .stream()
-                    .map(orderEventProduct -> {
-                        return this.productRepository.findByProductId(orderEventProduct.productId)
-                                .flatMap(product -> {
-                                    product.quantity += orderEventProduct.quantity;
-                                    return this.productRepository.save(product);
-                                });
-                    }).toList()).collectList().block();
+            PolyshopEvent event = this.queueService.parse(message);
+            List<PolyshopEventProduct> eventProducts = Arrays.asList(event.products);
+            Flux.merge(eventProducts.stream()
+                    .map(eventProduct -> this.productRepository.findByProductId(eventProduct.id)
+                            .flatMap(product -> {
+                                product.quantity += eventProduct.quantity;
+                                return this.productRepository.save(product);
+                            }))
+                    .toList()).collectList().block();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

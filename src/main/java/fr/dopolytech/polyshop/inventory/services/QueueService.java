@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import fr.dopolytech.polyshop.inventory.events.InventoryUpdatedEvent;
+import fr.dopolytech.polyshop.inventory.models.PolyshopEvent;
 
 @Component
 public class QueueService {
@@ -17,15 +17,19 @@ public class QueueService {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void sendUpdate(InventoryUpdatedEvent event) throws JsonProcessingException {
-        rabbitTemplate.convertAndSend("inventoryExchange", "inventory.update", stringify(event));
+    public void sendUpdateSuccess(PolyshopEvent event) throws JsonProcessingException {
+        rabbitTemplate.convertAndSend("inventoryExchange", "inventory.update.success", stringify(event));
     }
 
-    public String stringify(Object obj) throws JsonProcessingException {
+    public void sendUpdateFailed(PolyshopEvent event) throws JsonProcessingException {
+        rabbitTemplate.convertAndSend("inventoryExchange", "inventory.update.failed", stringify(event));
+    }
+
+    public String stringify(PolyshopEvent obj) throws JsonProcessingException {
         return mapper.writeValueAsString(obj);
     }
 
-    public <T> T parse(String json, Class<T> type) throws JsonProcessingException {
-        return mapper.readValue(json, type);
+    public PolyshopEvent parse(String json) throws JsonProcessingException {
+        return mapper.readValue(json, PolyshopEvent.class);
     }
 }
