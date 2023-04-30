@@ -25,27 +25,17 @@ public class RabbitMQConfiguration {
     }
 
     @Bean
-    public TopicExchange paymentExchange() {
-        return new TopicExchange("paymentExchange");
+    public Binding orderCreatedBinding(Queue updateInventoryQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(updateInventoryQueue).to(exchange).with("order.created");
     }
 
     @Bean
-    public TopicExchange shippingExchange() {
-        return new TopicExchange("shippingExchange");
+    public Binding paymentFailedBinding(Queue rollbackInventoryQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(rollbackInventoryQueue).to(exchange).with("order.cancelled.payment");
     }
 
     @Bean
-    public Binding orderCreatedBinding(Queue updateInventoryQueue, TopicExchange orderExchange) {
-        return BindingBuilder.bind(updateInventoryQueue).to(orderExchange).with("order.created");
-    }
-
-    @Bean
-    public Binding paymentFailedBinding(Queue rollbackInventoryQueue, TopicExchange paymentExchange) {
-        return BindingBuilder.bind(rollbackInventoryQueue).to(paymentExchange).with("payment.done.failed");
-    }
-
-    @Bean
-    public Binding shippingFailedBinding(Queue rollbackInventoryQueue, TopicExchange shippingExchange) {
-        return BindingBuilder.bind(rollbackInventoryQueue).to(shippingExchange).with("shipping.done.failed");
+    public Binding shippingFailedBinding(Queue rollbackInventoryQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(rollbackInventoryQueue).to(exchange).with("shipping.cancelled.shipping");
     }
 }
